@@ -55,3 +55,47 @@ SELECT
     total_amount
 FROM RankedMonthlyTotals
 WHERE amount_rank = 1;
+
+/*
+ write a query to print the transaction details(all columns from the table) for each card type when
+it reaches a cumulative of 1000000 total spends(We should have 4 rows in the o/p one for each card type)
+*/
+WITH CumulativeSpends AS (
+    SELECT 
+        *,
+        SUM(amount) OVER(PARTITION BY card_type ORDER BY transaction_date,transaction_id ) AS running_total
+    FROM credit_card_transcations
+),
+RankedMilestones AS (
+    SELECT 
+        *,
+        RANK() OVER(PARTITION BY card_type ORDER BY running_total) AS milestone_rank
+    FROM CumulativeSpends 
+    WHERE running_total >= 1000000
+)
+SELECT * FROM RankedMilestones 
+WHERE milestone_rank = 1;
+
+
+-- write a query to find city which had lowest percentage spend for gold card type
+
+WITH CityGoldSpends AS (
+    SELECT 
+        city, 
+        SUM(amount) AS city_total_amount
+    FROM credit_card_transcations 
+    WHERE card_type = 'Gold'
+    GROUP BY city
+)
+SELECT TOP 1 
+    city,
+    city_total_amount,
+    (city_total_amount * 1.0 / SUM(city_total_amount) OVER()) * 100 AS spend_percentage
+FROM CityGoldSpends 
+ORDER BY spend_percentage ASC;
+
+
+
+
+
+
