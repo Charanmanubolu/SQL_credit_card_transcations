@@ -26,8 +26,6 @@ pct_contribution
 FROM ranked_cities
 WHERE spend_rank <= 5;
 
-
-
 -- write a query to print highest spend month and amount spent in that month for each card type
 
 WITH MonthlyCardTotals AS (
@@ -94,8 +92,33 @@ SELECT TOP 1
 FROM CityGoldSpends 
 ORDER BY spend_percentage ASC;
 
-
-
-
+/*
+write a query to print 3 columns:  city, highest_expense_type , lowest_expense_type 
+(example format : Delhi , bills, Fuel)
+ */
+WITH CityExpenseTotals AS (
+    SELECT 
+        city,
+        exp_type,
+        SUM(amount) AS total_amount
+    FROM credit_card_transcations
+    GROUP BY city, exp_type
+),
+RankedCityExpenses AS (
+    SELECT 
+        city,
+        exp_type,
+        total_amount,
+        RANK() OVER(PARTITION BY city ORDER BY total_amount ASC) AS lowest_spend_rank,
+        RANK() OVER(PARTITION BY city ORDER BY total_amount DESC) AS highest_spend_rank 
+    FROM CityExpenseTotals
+)
+SELECT 
+    city,
+    MAX(CASE WHEN highest_spend_rank = 1 THEN exp_type END) AS highest_expense_type,
+    MAX(CASE WHEN lowest_spend_rank = 1 THEN exp_type END) AS lowest_expense_type
+FROM RankedCityExpenses
+GROUP BY city
+ORDER BY city;
 
 
